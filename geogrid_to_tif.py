@@ -1,6 +1,6 @@
+import argparse
 import glob
 import os
-import sys
 
 import numpy as np
 from affine import Affine
@@ -17,6 +17,8 @@ def read_index(index_path):
         "tile_x",
         "tile_y",
         "tile_z",
+        "tile_z_start",
+        "tile_z_end",
         "wordsize",
         "filename_digits",
         "tile_bdr",
@@ -48,7 +50,8 @@ def read_index(index_path):
             if not line or line[0] == "#":
                 continue
             k, v = line.split("=", maxsplit=1)
-            k = k.lower()
+            k = k.lower().strip()
+            v = v.strip()
 
             if k in int_fields:
                 v = int(v)
@@ -59,6 +62,12 @@ def read_index(index_path):
             elif v[0] == '"' and v[-1] == '"':
                 v = v[1:-1]
             index[k] = v
+
+    if "tile_z_start" in index or "tile_z_end" in index:
+        assert (
+            "tile_z_start" in index and "tile_z_end" in index
+        ), "Both tile_z_start and tile_z_end are required."
+        index["tile_z"] = index["tile_z_end"] - index["tile_z_start"] + 1
 
     return index
 
@@ -185,6 +194,8 @@ def main(geog_dir, output_path):
 
 
 if __name__ == "__main__":
-    geog_dir = sys.argv[1]
-    output_path = sys.argv[2]
-    main(geog_dir, output_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("geog_dir", help="Path to geogrid directory")
+    parser.add_argument("tif", help="Path to save converted tif")
+    args = parser.parse_args()
+    main(args.geog_dir, args.tif)
